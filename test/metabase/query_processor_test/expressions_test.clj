@@ -7,7 +7,9 @@
             [metabase.query-processor.interface :as qpi]
             [metabase.query-processor.middleware.expand :as ql]
             [metabase.test.data :as data]
-            [metabase.test.data.datasets :as datasets]))
+            [metabase.test.data.datasets :as datasets]
+            [metabase.test.data
+             [datasets :as datasets :refer [*engine*]]]))
 
 ;; Test the expansion of the expressions clause
 (expect
@@ -35,15 +37,18 @@
             (ql/order-by (ql/asc $id))))))
 
 ;; Make sure FLOATING POINT division is done
-(datasets/expect-with-engines (non-timeseries-engines-with-feature :expressions)
-  [[1 "Red Medicine"           4 10.0646 -165.374 3 1.5]     ; 3 / 2 SHOULD BE 1.5, NOT 1 (!)
-   [2 "Stout Burgers & Beers" 11 34.0996 -118.329 2 1.0]
-   [3 "The Apple Pan"         11 34.0406 -118.428 2 1.0]]
-  (format-rows-by [int str int (partial u/round-to-decimals 4) (partial u/round-to-decimals 4) int float]
-    (rows (data/run-query venues
-            (ql/expressions {:my-cool-new-field (ql// $price 2)})
-            (ql/limit 3)
-            (ql/order-by (ql/asc $id))))))
+(cond
+  (contains? #{:sqlite :crate} *engine*)
+  (datasets/expect-with-engines (non-timeseries-engines-with-feature :expressions)
+                                [[1 "Red Medicine"           4 10.0646 -165.374 3 1.5]     ; 3 / 2 SHOULD BE 1.5, NOT 1 (!)
+                                 [2 "Stout Burgers & Beers" 11 34.0996 -118.329 2 1.0]
+                                 [3 "The Apple Pan"         11 34.0406 -118.428 2 1.0]]
+                                (format-rows-by [int str int (partial u/round-to-decimals 4) (partial u/round-to-decimals 4) int float]
+                                                (rows (data/run-query venues
+                                                                      (ql/expressions {:my-cool-new-field (ql// $price 2)})
+                                                                      (ql/limit 3)
+                                                                      (ql/order-by (ql/asc $id)))))))
+
 
 ;; Can we do NESTED EXPRESSIONS ?
 (datasets/expect-with-engines (non-timeseries-engines-with-feature :expressions)
