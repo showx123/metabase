@@ -36,9 +36,10 @@
             (ql/limit 5)
             (ql/order-by (ql/asc $id))))))
 
+
 ;; Make sure FLOATING POINT division is done
 (cond
-  (contains? #{:sqlite :crate} *engine*)
+  (not (contains? #{:crate :h2} *engine*))
   (datasets/expect-with-engines (non-timeseries-engines-with-feature :expressions)
                                 [[1 "Red Medicine"           4 10.0646 -165.374 3 1.5]     ; 3 / 2 SHOULD BE 1.5, NOT 1 (!)
                                  [2 "Stout Burgers & Beers" 11 34.0996 -118.329 2 1.0]
